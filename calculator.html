@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ascent Quantum Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.4);
+            --border-color: rgba(99, 102, 241, 0.2);
+            --glow-color: #6366f1;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at center, #1e1b4b 0%, var(--bg-color) 70%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient glowing background blobs */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        body::before {
+            background: var(--glow-color);
+            top: 20%;
+            left: 20%;
+            animation: float-slow 15s infinite ease-in-out;
+        }
+
+        body::after {
+            background: var(--accent-pink);
+            bottom: 20%;
+            right: 20%;
+            animation: float-slow 12s infinite ease-in-out reverse;
+        }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(50px, 30px); }
+        }
+
+        /* Calculator Container */
+        .calculator {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            width: 360px;
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(99, 102, 241, 0.1);
+            z-index: 10;
+            position: relative;
+            transform: scale(1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .calculator::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, var(--glow-color), transparent, var(--accent-pink));
+            border-radius: 30px;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Logo / Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+        .indicator-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 9px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Screen Display */
+        .display {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .history {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            color: var(--text-secondary);
+            min-height: 20px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .output {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 38px;
+            font-weight: 600;
+            color: var(--text-primary);
+            overflow-x: auto;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(248, 250, 252, 0.1);
+        }
+
+        /* Custom Scrollbar for Display Output */
+        .output::-webkit-scrollbar {
+            height: 3px;
+        }
+        .output::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        /* Keyboard Grid */
+        .keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        /* Button Styling */
+        button {
+            height: 60px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        /* Special Keys Styling */
+        button.operator {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--glow-color);
+            border-color: rgba(99, 102, 241, 0.15);
+        }
+        
+        button.operator:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--border-color);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+        }
+
+        button.action {
+            background: rgba(236, 72, 153, 0.05);
+            color: var(--accent-pink);
+            border-color: rgba(236, 72, 153, 0.1);
+        }
+
+        button.action:hover {
+            background: rgba(236, 72, 153, 0.15);
+            border-color: rgba(236, 72, 153, 0.3);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);
+        }
+
+        button.equals {
+            background: linear-gradient(135deg, var(--glow-color), var(--accent-pink));
+            color: white;
+            grid-column: span 2;
+            border: none;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        button.equals:hover {
+            background: linear-gradient(135deg, #4f46e5, #db2777);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5), 0 0 15px rgba(236, 72, 153, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Spark/Glow effect on equal key */
+        button.equals::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.5s;
+        }
+
+        button.equals:hover::before {
+            left: 100%;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 400px) {
+            .calculator {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .calculator::before {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <div class="header">
+            <div class="logo">Quantum.v1</div>
+            <div class="indicator">
+                <div class="dot"></div>
+                <div class="indicator-text">Online</div>
+            </div>
+        </div>
+
+        <div class="display">
+            <div class="history" id="history"></div>
+            <div class="output" id="output">0</div>
+        </div>
+
+        <div class="keys">
+            <!-- Row 1 -->
+            <button class="action" onclick="clearAll()">AC</button>
+            <button class="action" onclick="backspace()">⌫</button>
+            <button class="operator" onclick="appendOperator('%')">%</button>
+            <button class="operator" onclick="appendOperator('/')">÷</button>
+
+            <!-- Row 2 -->
+            <button onclick="appendNum('7')">7</button>
+            <button onclick="appendNum('8')">8</button>
+            <button onclick="appendNum('9')">9</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+
+            <!-- Row 3 -->
+            <button onclick="appendNum('4')">4</button>
+            <button onclick="appendNum('5')">5</button>
+            <button onclick="appendNum('6')">6</button>
+            <button class="operator" onclick="appendOperator('-')">−</button>
+
+            <!-- Row 4 -->
+            <button onclick="appendNum('1')">1</button>
+            <button onclick="appendNum('2')">2</button>
+            <button onclick="appendNum('3')">3</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+
+            <!-- Row 5 -->
+            <button onclick="appendNum('0')">0</button>
+            <button onclick="appendNum('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const historyDiv = document.getElementById('history');
+
+        let displayValue = '0';
+        let historyValue = '';
+        let shouldReset = false;
+
+        function updateScreen() {
+            outputDiv.innerText = displayValue;
+            historyDiv.innerText = historyValue;
+            
+            // Adjust font size dynamically if output gets too long
+            if (displayValue.length > 8) {
+                outputDiv.style.fontSize = '28px';
+            } else if (displayValue.length > 12) {
+                outputDiv.style.fontSize = '20px';
+            } else {
+                outputDiv.style.fontSize = '38px';
+            }
+        }
+
+        function clearAll() {
+            displayValue = '0';
+            historyValue = '';
+            shouldReset = false;
+            updateScreen();
+        }
+
+        function backspace() {
+            if (shouldReset) {
+                clearAll();
+                return;
+            }
+            if (displayValue.length > 1) {
+                displayValue = displayValue.slice(0, -1);
+            } else {
+                displayValue = '0';
+            }
+            updateScreen();
+        }
+
+        function appendNum(num) {
+            if (displayValue === '0' || shouldReset) {
+                displayValue = num;
+                shouldReset = false;
+            } else {
+                // Prevent duplicate decimals
+                if (num === '.' && displayValue.includes('.')) return;
+                displayValue += num;
+            }
+            updateScreen();
+        }
+
+        function appendOperator(op) {
+            if (shouldReset) shouldReset = false;
+            
+            const lastChar = displayValue.slice(-1);
+            const operators = ['+', '-', '*', '/', '%'];
+            
+            // Check if user is replacing an operator
+            if (operators.includes(lastChar)) {
+                displayValue = displayValue.slice(0, -1) + op;
+            } else {
+                displayValue += op;
+            }
+            updateScreen();
+        }
+
+        function calculate() {
+            try {
+                let expression = displayValue;
+                
+                // Replace UI division/multiplication symbols if present
+                expression = expression.replace(/÷/g, '/').replace(/×/g, '*');
+
+                // Evaluate expression securely (simple math format check)
+                if (!/^[0-9+\-*/%.()\s]+$/.test(expression)) {
+                    throw new Error("Invalid Format");
+                }
+
+                const result = eval(expression);
+                
+                // Format results nicely to avoid floating decimal overflows
+                if (Number.isInteger(result)) {
+                    displayValue = String(result);
+                } else {
+                    displayValue = String(parseFloat(result.toFixed(8)));
+                }
+
+                historyValue = expression + ' =';
+                shouldReset = true;
+                updateScreen();
+
+                // Small pop scaling animation on success
+                const calcEl = document.querySelector('.calculator');
+                calcEl.style.transform = 'scale(1.02)';
+                setTimeout(() => calcEl.style.transform = 'scale(1)', 150);
+
+            } catch (err) {
+                displayValue = 'ERROR';
+                shouldReset = true;
+                updateScreen();
+            }
+        }
+
+        // Add keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') appendNum(e.key);
+            if (e.key === '.') appendNum('.');
+            if (e.key === '+') appendOperator('+');
+            if (e.key === '-') appendOperator('-');
+            if (e.key === '*') appendOperator('*');
+            if (e.key === '/') {
+                e.preventDefault();
+                appendOperator('/');
+            }
+            if (e.key === '%') appendOperator('%');
+            if (e.key === 'Enter' || e.key === '=') calculate();
+            if (e.key === 'Backspace') backspace();
+            if (e.key === 'Escape') clearAll();
+        });
+    </script>
+</body>
+</html>
